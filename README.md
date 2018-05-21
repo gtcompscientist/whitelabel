@@ -21,7 +21,7 @@ buildscript {
   }
   dependencies {
     // ... Other dependencies
-    classpath "co.csadev.whitelabel:0.1"
+    classpath "gradle.plugin.co.csadev.whitelabel:whitelabel:0.1"
   }
 }
 ```
