@@ -1,0 +1,62 @@
+buildscript {
+    ext.kotlin_version = '1.2.41'
+
+    repositories {
+        mavenCentral()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath "com.gradle.publish:plugin-publish-plugin:0.9.10"
+    }
+}
+
+apply plugin: "com.gradle.plugin-publish"
+apply plugin: 'java'
+apply plugin: 'kotlin'
+
+sourceCompatibility = 1.8
+
+repositories {
+    jcenter()
+    google()
+    mavenCentral()
+}
+
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    compile 'org.codehaus.groovy:groovy-all:2.3.11'
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+
+    compile 'com.android.tools.build:gradle:3.1.0'
+    compile 'commons-io:commons-io:2.4'
+
+    compile gradleApi()
+    compile localGroovy()
+}
+
+group='co.csadev.whitelabel'
+version='0.1'
+
+pluginBundle {
+    website = 'https://github.com/gtcompscientist'
+    vcsUrl = 'https://github.com/gtcompscientist/whitelabel'
+    description = 'A gradle plugin for quickly creating white labeled apps!'
+    tags = ['android', 'whitelabel']
+
+    plugins {
+        whitelabel {
+            id = 'co.csadev.whitelabel'
+            displayName = 'Android Easy White Label plugin'
+        }
+    }
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
