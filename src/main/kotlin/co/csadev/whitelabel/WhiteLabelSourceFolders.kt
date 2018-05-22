@@ -4,10 +4,10 @@ import org.gradle.api.logging.LogLevel
 import org.gradle.api.logging.Logger
 import java.io.File
 
-class WhiteLabelSourceFolders(private val rootDir: File, private val logger: Logger) {
+class WhiteLabelSourceFolders(private val rootDir: File, private val logger: Logger? = null) {
 
     private fun defaultDirectoriesOrEmpty(dir: File, existing: Set<File>): Iterable<*> {
-        logger.log(LogLevel.INFO, "Getting directory: ${dir.path}")
+        logger?.log(LogLevel.INFO, "Getting directory: ${dir.path}")
         if (!dir.exists() || !dir.isDirectory) return existing
         val newFiles = LinkedHashSet<File>()
         newFiles.add(dir)

@@ -14,7 +14,6 @@ buildscript {
 }
 
 apply plugin: "com.gradle.plugin-publish"
-apply plugin: 'java'
 apply plugin: 'kotlin'
 
 sourceCompatibility = 1.8
@@ -26,19 +25,33 @@ repositories {
 }
 
 dependencies {
-    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-    compile 'org.codehaus.groovy:groovy-all:2.3.11'
-    testCompile group: 'junit', name: 'junit', version: '4.12'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 
-    compile 'com.android.tools.build:gradle:3.1.0'
-    compile 'commons-io:commons-io:2.4'
+    implementation 'com.android.tools.build:gradle:3.1.0'
+    implementation 'commons-io:commons-io:2.4'
 
-    compile gradleApi()
-    compile localGroovy()
+    implementation gradleApi()
+
+    testImplementation 'junit:junit:4.12'
+    testImplementation 'org.assertj:assertj-core:3.6.2'
+    testImplementation 'org.mockito:mockito-core:1.10.19'
+}
+
+sourceSets {
+    test {
+        java {
+            srcDir file('src/test/java')
+        }
+        resources {
+            srcDir file('src/test/resources')
+        }
+        compileClasspath += sourceSets.main.output + configurations.testRuntime
+        runtimeClasspath += output + compileClasspath
+    }
 }
 
 group='co.csadev.whitelabel'
-version='0.1'
+version='0.2'
 
 pluginBundle {
     website = 'https://github.com/gtcompscientist'
@@ -50,6 +63,7 @@ pluginBundle {
         whitelabel {
             id = 'co.csadev.whitelabel'
             displayName = 'Android Easy White Label plugin'
+
         }
     }
 }

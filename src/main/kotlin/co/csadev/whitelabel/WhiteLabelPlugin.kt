@@ -18,7 +18,7 @@ class WhiteLabelPlugin : Plugin<Project> {
     }
 
     override fun apply(target: Project?) {
-        val android = target?.extensions?.getByType(AppExtension::class.java) ?: return
+        val android = target?.extensions?.getByType(AppExtension::class.java) ?: throw IllegalStateException("The 'com.android.application' plugin is required.")
         val extension = target.extensions.create("whiteLabel", WhiteLabelPluginExtension::class.java)
 //        logger().log(LogLevel.INFO, "Configured WhiteLabel folder: ${extension.root?.path}")
 //        logger().log(LogLevel.INFO, "Configured WhiteLabel dimension: ${extension.dimensionPosition}")
@@ -31,7 +31,10 @@ class WhiteLabelPlugin : Plugin<Project> {
 
         val flavorDimensionList = arrayListOf<String>()
         val flavorFolders = hashMapOf<String, File?>()
-        flavorDimensionList.addAll(android.flavorDimensionList)
+        android.flavorDimensionList?.let {
+            if (it.size > 0)
+                flavorDimensionList.addAll(it)
+        }
         flavorDimensionList.add(extension.dimensionPosition, WhiteLabelDimension)
         android.flavorDimensions(*(flavorDimensionList.toTypedArray()))
         folders@ subFolders.forEach { white ->
