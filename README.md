@@ -7,6 +7,7 @@ Gradle plugin for quickly creating white labeled apps without muddying your Andr
 1. Add plugin to `buildscript` `dependencies`.
 1. Apply the plugin (see [Usage](#usage)).
 1. Configure each specific white label flavor (see [Flavor Setup](#flavorsetup))
+1. [Optional] Configure the plugin options (see [Plugin Options](#pluginoptions))
 
 ## Buildscript
 
@@ -120,4 +121,20 @@ applicationIdSuffix ".flavorSuffix"
 After:
 ```
 flavorSuffix
+```
+
+## Plugin Options
+
+An optional `JSON` file in your application root directory named "whitelabel.json" will allow you to configure certain options in the plugin:
+
+* `root`: Directory location for whitelabel configuration
+* `dimensionPosition`: Where within the flavorDimensions to place the whitelabel (Default is "0", first)
+* `addApplicationSuffix`: Whether to include the application suffix
+
+```json
+{
+  "root":"src/test/fixtures/config_app/configuredLabel",
+  "dimensionPosition":1,
+  "addApplicationSuffix":false
+}
 ```

@@ -1,6 +1,7 @@
 package co.csadev.whitelabel
 
 import com.android.build.gradle.AppExtension
+import com.android.build.gradle.api.AndroidSourceSet
 import org.gradle.api.internal.plugins.PluginApplicationException
 import org.gradle.internal.impldep.org.testng.log4testng.Logger
 import org.gradle.testfixtures.ProjectBuilder
@@ -73,24 +74,39 @@ class WhiteLabelPluginTest {
     @Test
     fun `whitelabel flavors includes source folders that are present`() {
         val extension = evaluatableProject().extensions.findByType(AppExtension::class.java)!!
-        val example1SourceSets = extension.sourceSets.findByName("example_1")!!
-        assert(example1SourceSets.renderscript.srcDirs.size == 1)
-        assert(example1SourceSets.aidl.srcDirs.size == 1)
-        assert(example1SourceSets.shaders.srcDirs.size == 1)
-        assert(example1SourceSets.assets.srcDirs.size == 1)
-        assert(example1SourceSets.java.srcDirs.size == 1)
-        assert(example1SourceSets.res.srcDirs.size == 1)
-        assert(example1SourceSets.jni.srcDirs.size == 1)
-        assert(example1SourceSets.jniLibs.srcDirs.size == 1)
-        val example2SourceSets = extension.sourceSets.findByName("example_2")!!
-        assert(example2SourceSets.renderscript.srcDirs.size == 2)
-        assert(example2SourceSets.aidl.srcDirs.size == 2)
-        assert(example2SourceSets.shaders.srcDirs.size == 2)
-        assert(example2SourceSets.assets.srcDirs.size == 2)
-        assert(example2SourceSets.java.srcDirs.size == 2)
-        assert(example2SourceSets.res.srcDirs.size == 2)
-        assert(example2SourceSets.jni.srcDirs.size == 2)
-        assert(example2SourceSets.jniLibs.srcDirs.size == 2)
+        testSourceSet(extension.sourceSets.findByName("example_1")!!, 1)
+        testSourceSet(extension.sourceSets.findByName("example_2")!!, 2)
+    }
+
+    private fun testSourceSet(sourceSet: AndroidSourceSet, expectedSize: Int) {
+        assert(sourceSet.renderscript.srcDirs.size == expectedSize)
+        assert(sourceSet.aidl.srcDirs.size == expectedSize)
+        assert(sourceSet.shaders.srcDirs.size == expectedSize)
+        assert(sourceSet.assets.srcDirs.size == expectedSize)
+        assert(sourceSet.java.srcDirs.size == expectedSize)
+        assert(sourceSet.res.srcDirs.size == expectedSize)
+        assert(sourceSet.jni.srcDirs.size == expectedSize)
+        assert(sourceSet.jniLibs.srcDirs.size == expectedSize)
+    }
+
+
+    @Test
+    fun `whitelabel config file adjusts options`() {
+        val extension = configuredProject().extensions.findByType(AppExtension::class.java)!!
+        //Should have two dimensions, and "whiteLabel" should be second
+        assert(extension.flavorDimensionList.size == 2)
+        assert(extension.flavorDimensionList[1].toLowerCase() == "whitelabel", { "Has Dimensions: ${extension.flavorDimensionList}" })
+
+        //The folder is named differently, and can only be found if the config file is properly read
+        testSourceSet(extension.sourceSets.findByName("example_1")!!, 1)
+        testSourceSet(extension.sourceSets.findByName("example_2")!!, 2)
+
+        //Configuration test turns off applicationIdSuffix
+        val example1Flavor = extension.productFlavors.findByName("example_1")!!
+        assert(example1Flavor.applicationIdSuffix.isNullOrEmpty(), {"Example 1 Suffix: ${example1Flavor.applicationIdSuffix}" })
+
+        val example2Flavor = extension.productFlavors.findByName("example_2")!!
+        assert(example2Flavor.applicationIdSuffix.isNullOrEmpty(), {"Example 2 Suffix: ${example2Flavor.applicationIdSuffix}" })
     }
 
 }

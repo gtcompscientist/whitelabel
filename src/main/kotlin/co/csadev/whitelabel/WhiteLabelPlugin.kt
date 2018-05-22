@@ -2,6 +2,8 @@ package co.csadev.whitelabel
 
 import com.android.build.gradle.AppExtension
 import com.android.utils.FileUtils
+import groovy.json.JsonSlurper
+import groovy.json.internal.LazyMap
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.logging.LogLevel
@@ -19,15 +21,35 @@ class WhiteLabelPlugin : Plugin<Project> {
 
     override fun apply(target: Project?) {
         val android = target?.extensions?.getByType(AppExtension::class.java) ?: throw IllegalStateException("The 'com.android.application' plugin is required.")
-        val extension = target.extensions.create("whiteLabel", WhiteLabelPluginExtension::class.java)
-//        logger().log(LogLevel.INFO, "Configured WhiteLabel folder: ${extension.root?.path}")
-//        logger().log(LogLevel.INFO, "Configured WhiteLabel dimension: ${extension.dimensionPosition}")
-//        logger().log(LogLevel.INFO, "Configured WhiteLabel application suffix: ${extension.addApplicationSuffix}")
 
+        val extension = WhiteLabelPluginExtension()
+        val jsonFile = target.projectDir.listFiles().firstOrNull { it.name.toLowerCase() == "whitelabel.json" }
+        if (jsonFile != null) {
+            try {
+                val configText = JsonSlurper().parse(jsonFile) as LazyMap
+                (configText.getOrDefault("root", null) as? String)?.let {
+                    extension.root = File(it)
+                }
+                (configText.getOrDefault("dimensionPosition", null) as? Int)?.let {
+                    extension.dimensionPosition = it
+                }
+                (configText.getOrDefault("addApplicationSuffix", null) as? Boolean)?.let {
+                    extension.addApplicationSuffix = it
+                }
+            } catch (ex: Exception) {
+                logger().log(LogLevel.INFO, "Unable to process config file:\n$ex")
+                throw(ex)
+            }
+        }
+        logger().log(LogLevel.INFO, "Configured WhiteLabel folder: ${extension.root?.path}")
+        logger().log(LogLevel.INFO, "Configured WhiteLabel dimension: ${extension.dimensionPosition}")
+        logger().log(LogLevel.INFO, "Configured WhiteLabel application suffix: ${extension.addApplicationSuffix}")
         val configFolder = extension.root ?: target.projectDir.listFiles()?.firstOrNull { f ->
             f.isDirectory && f.name.toLowerCase() == "whitelabel"
         } ?: throw IllegalArgumentException("Unable to find whitelabel directory.\nProject Directory:\t${target.projectDir}\nConfigured Root:${extension.root}")
-        val subFolders = configFolder.listFiles().filter { it.isDirectory }
+        val subFolders = configFolder.listFiles()?.filter { it.isDirectory }
+        if (subFolders?.isNotEmpty() != true)
+            throw IllegalArgumentException("Unable to find whitelabel subfolders:\nConfig Path:${configFolder.absolutePath}")
 
         val flavorDimensionList = arrayListOf<String>()
         val flavorFolders = hashMapOf<String, File?>()
@@ -37,7 +59,7 @@ class WhiteLabelPlugin : Plugin<Project> {
         }
         flavorDimensionList.add(extension.dimensionPosition, WhiteLabelDimension)
         android.flavorDimensions(*(flavorDimensionList.toTypedArray()))
-        folders@ subFolders.forEach { white ->
+        folders@ subFolders?.forEach { white ->
             android.productFlavors.create(white.name, { flavor ->
                 flavor.dimension = WhiteLabelDimension
                 flavorFolders[flavor.name] = white
