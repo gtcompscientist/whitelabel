@@ -1,6 +1,8 @@
 # whitelabel
 Gradle plugin for quickly creating white labeled apps without muddying your Android project folders
 
+[![CircleCI](https://circleci.com/gh/gtcompscientist/whitelabel/tree/master.svg?style=svg)](https://circleci.com/gh/gtcompscientist/whitelabel/tree/master)
+
 ## Quick Start Guide
 
 1. Include the Gradle plugin repository in `buildscript` `repositories` (see [Buildscript](#buildscript)).
