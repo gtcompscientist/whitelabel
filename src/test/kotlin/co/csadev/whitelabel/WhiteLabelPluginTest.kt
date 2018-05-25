@@ -50,9 +50,9 @@ class WhiteLabelPluginTest {
         assert(!example2Flavor.buildConfigFields.isEmpty())
         assert(example2Flavor.buildConfigFields.containsKey("fieldName"))
         assert(example2Flavor.buildConfigFields["fieldName"]?.type == "String",
-                { "Type: ${example2Flavor.buildConfigFields["fieldName"]?.type}" })
+                { "Type: '${example2Flavor.buildConfigFields["fieldName"]?.type}'" })
         assert(example2Flavor.buildConfigFields["fieldName"]?.value == "\"Config field here!\"",
-                { "Value: ${example2Flavor.buildConfigFields["fieldName"]?.value}" })
+                { "Value: '${example2Flavor.buildConfigFields["fieldName"]?.value}' != '\"Config field here!\"'" })
     }
 
     @Test
@@ -66,9 +66,9 @@ class WhiteLabelPluginTest {
         example2Flavor.manifestPlaceholders["placeholder_example"]
         assert(example2Flavor.manifestPlaceholders.containsKey("placeholder_example"))
         assert(example2Flavor.manifestPlaceholders["placeholder_example"] == "example",
-                { "Example: ${example2Flavor.manifestPlaceholders["placeholder_example"]}" })
+                { "Example: '${example2Flavor.manifestPlaceholders["placeholder_example"]}' != 'example'" })
         assert(example2Flavor.manifestPlaceholders["placeholder_test"] == "test",
-                { "Example: ${example2Flavor.manifestPlaceholders["placeholder_test"]}" })
+                { "Example: '${example2Flavor.manifestPlaceholders["placeholder_test"]}' != 'test'" })
     }
 
     @Test

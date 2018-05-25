@@ -25,6 +25,7 @@ fun configProject(): Project {
 fun evaluatableProject() = setupProject(fixtureProject(), true)
 fun unusuableProject() = setupProject(emptyProject(), false)
 fun configuredProject() = setupProject(configProject(), true, "testFlavor")
+fun unappliedProject() = setupProject(configProject(), false)
 
 private fun setupProject(project: Project, applyPlugin: Boolean, additionalFlavorDimension: String? = null): Project {
     project.plugins.apply("com.android.application")

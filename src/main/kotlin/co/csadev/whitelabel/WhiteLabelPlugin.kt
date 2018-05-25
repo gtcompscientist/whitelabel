@@ -21,8 +21,8 @@ class WhiteLabelPlugin : Plugin<Project> {
 
     override fun apply(target: Project?) {
         val android = target?.extensions?.getByType(AppExtension::class.java) ?: throw IllegalStateException("The 'com.android.application' plugin is required.")
+        val extension = target.extensions.create(WhiteLabelDimension, WhiteLabelPluginExtension::class.java)
 
-        val extension = WhiteLabelPluginExtension()
         val jsonFile = target.projectDir.listFiles().firstOrNull { it.name.toLowerCase() == "whitelabel.json" }
         if (jsonFile != null) {
             try {
@@ -59,31 +59,18 @@ class WhiteLabelPlugin : Plugin<Project> {
         }
         flavorDimensionList.add(extension.dimensionPosition, WhiteLabelDimension)
         android.flavorDimensions(*(flavorDimensionList.toTypedArray()))
-        folders@ subFolders?.forEach { white ->
+        folders@ subFolders.forEach { white ->
             android.productFlavors.create(white.name, { flavor ->
                 flavor.dimension = WhiteLabelDimension
                 flavorFolders[flavor.name] = white
                 FileUtils.find(white, "buildConfig").orNull()?.let { buildConfig ->
                     val lines = buildConfig.readLines()
                     for (line in lines) {
-                        val segments = line
-                                .split("\" ")
-                                .filter { it.isNotEmpty() && it != "\"" }
-                        val type = segments.getOrNull(0)
-                                ?.removePrefix("\"")
-                                ?.trim()
-                                ?: continue
-                        val name = segments.getOrNull(1)
-                                ?.removePrefix("\"")
-                                ?.trim()
-                                ?.removeSuffix("\"")
-                                ?: continue
-                        val value = segments.getOrNull(2)
-                                ?.removePrefix("\"")
-                                ?.trim()
-                                ?.removeSuffix("\"")
-                                ?.replace("\\\"", "\"")
-                                ?: continue
+                        val firstSplit = line.indexOf(' ')
+                        val secondSplit = line.indexOf(' ', firstSplit + 1)
+                        val type = line.substring(0, firstSplit)
+                        val name = line.substring(firstSplit + 1, secondSplit)
+                        val value = line.substring(secondSplit + 1)
                         logger().log(LogLevel.INFO, "Adding Build Config: '$type'->'$name'->'$value'")
                         flavor.buildConfigField(type, name, value)
                     }
@@ -101,34 +88,27 @@ class WhiteLabelPlugin : Plugin<Project> {
                     val placeHolders = HashMap<String, Any>()
                     val lines = buildConfig.readLines()
                     for (line in lines) {
-                        val segments = line
-                                .split("\"")
-                                .filter { it.isNotEmpty() && it != "\"" }
-                        val key = segments.firstOrNull()
-                                ?.trim()
-                                ?.replaceFirst("\"", "")
-                                ?.removeSuffix("\"")
-                                ?: continue
-                        val value = segments.lastOrNull()
-                                ?.trim()
-                                ?.replaceFirst("\"", "")
-                                ?.removeSuffix("\"")
-                                ?: continue
+                        val split = line.indexOf(' ')
+                        val key = line.substring(0, split)
+                        var value = line.substring(split + 1)
+                        if (value.startsWith("\""))
+                            value = "\\" + value
+                        if (value.endsWith("\""))
+                            value = value.dropLast(1) + "\\\""
                         logger().log(LogLevel.INFO, "Adding Manifest Placeholder: '$key'->'$value'")
                         placeHolders[key] = value
                     }
                     flavor.addManifestPlaceholders(placeHolders)
                 }
-                val whiteLabelSource = WhiteLabelSourceFolders(white, logger())
                 val sourceSet = android.sourceSets.maybeCreate(white.name)
-                sourceSet.renderscript.setSrcDirs(whiteLabelSource.getRenderscriptDirectories(sourceSet.renderscript.srcDirs))
-                sourceSet.aidl.setSrcDirs(whiteLabelSource.getAidlDirectories(sourceSet.aidl.srcDirs))
-                sourceSet.shaders.setSrcDirs(whiteLabelSource.getShadersDirectories(sourceSet.shaders.srcDirs))
-                sourceSet.assets.setSrcDirs(whiteLabelSource.getAssetsDirectories(sourceSet.assets.srcDirs))
-                sourceSet.java.setSrcDirs(whiteLabelSource.getJavaDirectories(sourceSet.java.srcDirs))
-                sourceSet.res.setSrcDirs(whiteLabelSource.getResDirectories(sourceSet.res.srcDirs))
-                sourceSet.jni.setSrcDirs(whiteLabelSource.getJniDirectories(sourceSet.jni.srcDirs))
-                sourceSet.jniLibs.setSrcDirs(whiteLabelSource.getJniLibsDirectories(sourceSet.jniLibs.srcDirs))
+                sourceSet.renderscript.withExtraSource(white, WhiteLabelSourceFolders.renderscript, logger())
+                sourceSet.aidl.withExtraSource(white, WhiteLabelSourceFolders.aidl, logger())
+                sourceSet.shaders.withExtraSource(white, WhiteLabelSourceFolders.shaders, logger())
+                sourceSet.assets.withExtraSource(white, WhiteLabelSourceFolders.assets, logger())
+                sourceSet.java.withExtraSource(white, WhiteLabelSourceFolders.java, logger())
+                sourceSet.res.withExtraSource(white, WhiteLabelSourceFolders.res, logger())
+                sourceSet.jni.withExtraSource(white, WhiteLabelSourceFolders.jni, logger())
+                sourceSet.jniLibs.withExtraSource(white, WhiteLabelSourceFolders.jniLibs, logger())
             })
         }
     }

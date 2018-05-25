@@ -1,49 +1,32 @@
 package co.csadev.whitelabel
 
+import com.android.build.gradle.api.AndroidSourceDirectorySet
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.logging.Logger
 import java.io.File
 
-class WhiteLabelSourceFolders(private val rootDir: File, private val logger: Logger? = null) {
+enum class WhiteLabelSourceFolders(val folder: String) {
+    renderscript("renderscript"),
+    aidl("aidl"),
+    shaders("shaders"),
+    assets("assets"),
+    java("java"),
+    res("res"),
+    jni("jni"),
+    jniLibs("jniLibs");
 
-    private fun defaultDirectoriesOrEmpty(dir: File, existing: Set<File>): Iterable<*> {
-        logger?.log(LogLevel.INFO, "Getting directory: ${dir.path}")
+    fun directories(root: File, existing: Set<File>, logger: Logger?) = defaultDirectoriesOrEmpty(File(root, folder), existing, logger)
+
+    private fun defaultDirectoriesOrEmpty(dir: File, existing: Set<File>, logger: Logger?): Iterable<*> {
+        logger?.log(LogLevel.INFO, "Getting directory: ${dir.absolutePath}")
         if (!dir.exists() || !dir.isDirectory) return existing
         val newFiles = LinkedHashSet<File>()
         newFiles.add(dir)
         newFiles.addAll(existing)
         return newFiles
     }
+}
 
-    fun getRenderscriptDirectories(existing: Set<File>): Iterable<*> {
-        return defaultDirectoriesOrEmpty(File(rootDir, "renderscript"), existing)
-    }
-
-    fun getAidlDirectories(existing: Set<File>): Iterable<*> {
-        return defaultDirectoriesOrEmpty(File(rootDir, "aidl"), existing)
-    }
-
-    fun getShadersDirectories(existing: Set<File>): Iterable<*> {
-        return defaultDirectoriesOrEmpty(File(rootDir, "shaders"), existing)
-    }
-
-    fun getAssetsDirectories(existing: Set<File>): Iterable<*> {
-        return defaultDirectoriesOrEmpty(File(rootDir, "assets"), existing)
-    }
-
-    fun getJavaDirectories(existing: Set<File>): Iterable<*> {
-        return defaultDirectoriesOrEmpty(File(rootDir, "java"), existing)
-    }
-
-    fun getResDirectories(existing: Set<File>): Iterable<*> {
-        return defaultDirectoriesOrEmpty(File(rootDir, "res"), existing)
-    }
-
-    fun getJniDirectories(existing: Set<File>): Iterable<*> {
-        return defaultDirectoriesOrEmpty(File(rootDir, "jni"), existing)
-    }
-
-    fun getJniLibsDirectories(existing: Set<File>): Iterable<*> {
-        return defaultDirectoriesOrEmpty(File(rootDir, "jniLibs"), existing)
-    }
+fun AndroidSourceDirectorySet.withExtraSource(root: File, type: WhiteLabelSourceFolders, logger: Logger? = null) {
+    setSrcDirs(type.directories(root, srcDirs, logger))
 }

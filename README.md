@@ -83,7 +83,7 @@ Folders are all designed to be added to the sourceSets in the same way that you 
 ### `buildConfig`
 Text file (no extension) to add BuildConfig fields as you would normally do within your app's `build.gradle`
 
-Add one config per line, with the same order and escaping as you would normally include in your `build.gradle`, without comma separation.
+Add one config per line, with the same order and escaping as you would normally include in your `build.gradle`, without comma separation, and without escaped quotes.
 
 Before:
 ```groovy
@@ -92,23 +92,25 @@ buildConfigField "String", "ConfigString", "\"ConfiguredFromGradleFlavor\""
 
 After:
 ```
-"String" "ConfigString" "\"ConfiguredFromGradleFlavor\""
+String ConfigString "ConfiguredFromGradleFlavor"
 ```
 
 ### `manifestPlaceholders`
 Text file (no extension) to include Manifest Placeholder fields as you would normally do within your app's `build.gradle`
 
-Add one config per line, with the same order and escaping as you would normally include in your `build.gradle`, without comma separation.
+Add one config per line, with the same order and escaping as you would normally include in your `build.gradle`, without comma separation, and without quotes.
 
 Before:
 ```groovy
-manifestPlaceholders.put("manifest_string", "configuredFromGradle")
+manifestPlaceholders.put("manifest_string", "configured From Gradle")
 ```
 
 After:
 ```
-"manifest_string" "configuredFromGradle"
+manifest_string configured From Gradle
 ```
+
+Quotes are excluded to ease the parsing of this file.
 
 ### `applicationIdSuffix`
 Text file (no extension) to override the folder name as the applicationIdSuffix for the flavor
