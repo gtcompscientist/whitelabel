@@ -2,6 +2,7 @@ package co.csadev.whitelabel
 
 import com.android.build.gradle.AppExtension
 import com.android.utils.FileUtils
+import com.google.common.reflect.TypeToken
 import groovy.json.JsonSlurper
 import groovy.json.internal.LazyMap
 import org.gradle.api.Plugin
@@ -21,95 +22,108 @@ class WhiteLabelPlugin : Plugin<Project> {
 
     override fun apply(target: Project?) {
         val android = target?.extensions?.getByType(AppExtension::class.java) ?: throw IllegalStateException("The 'com.android.application' plugin is required.")
-        val extension = target.extensions.create(WhiteLabelDimension, WhiteLabelPluginExtension::class.java)
+        val extensionList = ArrayList<WhiteLabelPluginExtension>()
 
         val jsonFile = target.projectDir.listFiles().firstOrNull { it.name.toLowerCase() == "whitelabel.json" }
         if (jsonFile != null) {
             try {
-                val configText = JsonSlurper().parse(jsonFile) as LazyMap
-                (configText.getOrDefault("root", null) as? String)?.let {
-                    extension.root = File(it)
-                }
-                (configText.getOrDefault("dimensionPosition", null) as? Int)?.let {
-                    extension.dimensionPosition = it
-                }
-                (configText.getOrDefault("addApplicationSuffix", null) as? Boolean)?.let {
-                    extension.addApplicationSuffix = it
+                val configArray = JsonSlurper().parse(jsonFile) as? ArrayList<LazyMap>
+                configArray?.forEach { configJson ->
+                    val extension = WhiteLabelPluginExtension()
+                    (configJson.getOrDefault("root", null) as? String)?.let {
+                        extension.root = File(it)
+                    }
+                    (configJson.getOrDefault("dimensionPosition", null) as? Int)?.let {
+                        extension.dimensionPosition = it
+                    }
+                    (configJson.getOrDefault("addApplicationSuffix", null) as? Boolean)?.let {
+                        extension.addApplicationSuffix = it
+                    }
+                    extensionList.add(extension)
                 }
             } catch (ex: Exception) {
                 logger().log(LogLevel.INFO, "Unable to process config file:\n$ex")
                 throw(ex)
             }
         }
-        logger().log(LogLevel.INFO, "Configured WhiteLabel folder: ${extension.root?.path}")
-        logger().log(LogLevel.INFO, "Configured WhiteLabel dimension: ${extension.dimensionPosition}")
-        logger().log(LogLevel.INFO, "Configured WhiteLabel application suffix: ${extension.addApplicationSuffix}")
-        val configFolder = extension.root ?: target.projectDir.listFiles()?.firstOrNull { f ->
-            f.isDirectory && f.name.toLowerCase() == "whitelabel"
-        } ?: throw IllegalArgumentException("Unable to find whitelabel directory.\nProject Directory:\t${target.projectDir}\nConfigured Root:${extension.root}")
-        val subFolders = configFolder.listFiles()?.filter { it.isDirectory }
-        if (subFolders?.isNotEmpty() != true)
-            throw IllegalArgumentException("Unable to find whitelabel subfolders:\nConfig Path:${configFolder.absolutePath}")
+        if (extensionList.isEmpty())
+            extensionList.add(WhiteLabelPluginExtension())
+        extensionList.sortBy { it.dimensionPosition }
+        extensionList.forEach { extension ->
+            logger().log(LogLevel.INFO, "Configured WhiteLabel folder: ${extension.root?.path}")
+            logger().log(LogLevel.INFO, "Configured WhiteLabel dimension: ${extension.dimensionPosition}")
+            logger().log(LogLevel.INFO, "Configured WhiteLabel application suffix: ${extension.addApplicationSuffix}")
+            val configFolder = requireNotNull(extension.root ?: target.projectDir.listFiles()?.firstOrNull { f ->
+                f.isDirectory && f.name.toLowerCase() == "whitelabel"
+            }) {
+                "Unable to find whitelabel directory.\nProject Directory:\t${target.projectDir}\nConfigured Root:${extension.root}"
+            }
+            val dimensionName = if (configFolder.name.toLowerCase() == "whitelabel") WhiteLabelDimension else "$WhiteLabelDimension${configFolder.name}"
 
-        val flavorDimensionList = arrayListOf<String>()
-        val flavorFolders = hashMapOf<String, File?>()
-        android.flavorDimensionList?.let {
-            if (it.size > 0)
-                flavorDimensionList.addAll(it)
-        }
-        flavorDimensionList.add(extension.dimensionPosition, WhiteLabelDimension)
-        android.flavorDimensions(*(flavorDimensionList.toTypedArray()))
-        folders@ subFolders.forEach { white ->
-            android.productFlavors.create(white.name, { flavor ->
-                flavor.dimension = WhiteLabelDimension
-                flavorFolders[flavor.name] = white
-                FileUtils.find(white, "buildConfig").orNull()?.let { buildConfig ->
-                    val lines = buildConfig.readLines()
-                    for (line in lines) {
-                        val firstSplit = line.indexOf(' ')
-                        val secondSplit = line.indexOf(' ', firstSplit + 1)
-                        val type = line.substring(0, firstSplit)
-                        val name = line.substring(firstSplit + 1, secondSplit)
-                        val value = line.substring(secondSplit + 1)
-                        logger().log(LogLevel.INFO, "Adding Build Config: '$type'->'$name'->'$value'")
-                        flavor.buildConfigField(type, name, value)
-                    }
-                }
-                if (extension.addApplicationSuffix) {
-                    var suffix = white.name
-                    FileUtils.find(white, "applicationIdSuffix").orNull()?.let { buildConfig ->
-                        val lines = buildConfig.readLines().firstOrNull() ?: return@let
-                        suffix = lines.trim()
-                    }
-                    flavor.applicationIdSuffix = suffix
-                }
+            val subFolders = configFolder.listFiles()?.filter { it.isDirectory }
+            if (subFolders?.isNotEmpty() != true)
+                throw IllegalArgumentException("Unable to find whitelabel subfolders:\nConfig Path:${configFolder.absolutePath}")
 
-                FileUtils.find(white, "manifestPlaceholders").orNull()?.let { buildConfig ->
-                    val placeHolders = HashMap<String, Any>()
-                    val lines = buildConfig.readLines()
-                    for (line in lines) {
-                        val split = line.indexOf(' ')
-                        val key = line.substring(0, split)
-                        var value = line.substring(split + 1)
-                        if (value.startsWith("\""))
-                            value = "\\" + value
-                        if (value.endsWith("\""))
-                            value = value.dropLast(1) + "\\\""
-                        logger().log(LogLevel.INFO, "Adding Manifest Placeholder: '$key'->'$value'")
-                        placeHolders[key] = value
+            val flavorDimensionList = arrayListOf<String>()
+            val flavorFolders = hashMapOf<String, File?>()
+            android.flavorDimensionList?.let {
+                if (it.size > 0)
+                    flavorDimensionList.addAll(it)
+            }
+            flavorDimensionList.add(extension.dimensionPosition, dimensionName)
+            android.flavorDimensions(*(flavorDimensionList.toTypedArray()))
+            folders@ subFolders.forEach { white ->
+                android.productFlavors.create(white.name, { flavor ->
+                    flavor.dimension = dimensionName
+                    flavorFolders[flavor.name] = white
+                    FileUtils.find(white, "buildConfig").orNull()?.let { buildConfig ->
+                        val lines = buildConfig.readLines()
+                        for (line in lines) {
+                            val firstSplit = line.indexOf(' ')
+                            val secondSplit = line.indexOf(' ', firstSplit + 1)
+                            val type = line.substring(0, firstSplit)
+                            val name = line.substring(firstSplit + 1, secondSplit)
+                            val value = line.substring(secondSplit + 1)
+                            logger().log(LogLevel.INFO, "Adding Build Config: '$type'->'$name'->'$value'")
+                            flavor.buildConfigField(type, name, value)
+                        }
                     }
-                    flavor.addManifestPlaceholders(placeHolders)
-                }
-                val sourceSet = android.sourceSets.maybeCreate(white.name)
-                sourceSet.renderscript.withExtraSource(white, WhiteLabelSourceFolders.renderscript, logger())
-                sourceSet.aidl.withExtraSource(white, WhiteLabelSourceFolders.aidl, logger())
-                sourceSet.shaders.withExtraSource(white, WhiteLabelSourceFolders.shaders, logger())
-                sourceSet.assets.withExtraSource(white, WhiteLabelSourceFolders.assets, logger())
-                sourceSet.java.withExtraSource(white, WhiteLabelSourceFolders.java, logger())
-                sourceSet.res.withExtraSource(white, WhiteLabelSourceFolders.res, logger())
-                sourceSet.jni.withExtraSource(white, WhiteLabelSourceFolders.jni, logger())
-                sourceSet.jniLibs.withExtraSource(white, WhiteLabelSourceFolders.jniLibs, logger())
-            })
+                    if (extension.addApplicationSuffix) {
+                        var suffix = white.name
+                        FileUtils.find(white, "applicationIdSuffix").orNull()?.let { buildConfig ->
+                            val lines = buildConfig.readLines().firstOrNull() ?: return@let
+                            suffix = lines.trim()
+                        }
+                        flavor.applicationIdSuffix = suffix
+                    }
+
+                    FileUtils.find(white, "manifestPlaceholders").orNull()?.let { buildConfig ->
+                        val placeHolders = HashMap<String, Any>()
+                        val lines = buildConfig.readLines()
+                        for (line in lines) {
+                            val split = line.indexOf(' ')
+                            val key = line.substring(0, split)
+                            var value = line.substring(split + 1)
+                            if (value.startsWith("\""))
+                                value = "\\" + value
+                            if (value.endsWith("\""))
+                                value = value.dropLast(1) + "\\\""
+                            logger().log(LogLevel.INFO, "Adding Manifest Placeholder: '$key'->'$value'")
+                            placeHolders[key] = value
+                        }
+                        flavor.addManifestPlaceholders(placeHolders)
+                    }
+                    val sourceSet = android.sourceSets.maybeCreate(white.name)
+                    sourceSet.renderscript.withExtraSource(white, WhiteLabelSourceFolders.renderscript, logger())
+                    sourceSet.aidl.withExtraSource(white, WhiteLabelSourceFolders.aidl, logger())
+                    sourceSet.shaders.withExtraSource(white, WhiteLabelSourceFolders.shaders, logger())
+                    sourceSet.assets.withExtraSource(white, WhiteLabelSourceFolders.assets, logger())
+                    sourceSet.java.withExtraSource(white, WhiteLabelSourceFolders.java, logger())
+                    sourceSet.res.withExtraSource(white, WhiteLabelSourceFolders.res, logger())
+                    sourceSet.jni.withExtraSource(white, WhiteLabelSourceFolders.jni, logger())
+                    sourceSet.jniLibs.withExtraSource(white, WhiteLabelSourceFolders.jniLibs, logger())
+                })
+            }
         }
     }
 }

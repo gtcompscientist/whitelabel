@@ -1,5 +1,7 @@
-{
-  "root":"src/test/fixtures/config_app/configuredLabel",
-  "dimensionPosition":1,
-  "addApplicationSuffix":false
-}
+[
+  {
+    "root":"src/test/fixtures/config_app/configuredLabel",
+    "dimensionPosition":1,
+    "addApplicationSuffix":false
+  }
+]

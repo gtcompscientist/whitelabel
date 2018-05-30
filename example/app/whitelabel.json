@@ -1,0 +1,12 @@
+[
+  {
+    "root":"whitelabel",
+    "dimensionPosition":0,
+    "addApplicationSuffix":false
+  },
+  {
+    "root":"secondary",
+    "dimensionPosition":1,
+    "addApplicationSuffix":true
+  }
+]

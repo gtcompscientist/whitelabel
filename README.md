@@ -135,10 +135,19 @@ An optional `JSON` file in your application root directory named "whitelabel.jso
 * `dimensionPosition`: Where within the flavorDimensions to place the whitelabel (Default is "0", first)
 * `addApplicationSuffix`: Whether to include the application suffix
 
+The json structure is actually an array of these objects, so that multiple dimensions can be configured. If more than one is provided, the list will be sorted by the `dimensionPosition` so that the `flavorDimension` array order is maintained.
+
 ```json
-{
-  "root":"src/test/fixtures/config_app/configuredLabel",
-  "dimensionPosition":1,
-  "addApplicationSuffix":false
-}
+[
+  {
+    "root":"src/test/fixtures/config_app/configuredLabel",
+    "dimensionPosition":0,
+    "addApplicationSuffix":false
+  },
+  {
+    "root":"src/test/fixtures/config_app/secondaryLabel",
+    "dimensionPosition":1,
+    "addApplicationSuffix":true
+  }
+]
 ```

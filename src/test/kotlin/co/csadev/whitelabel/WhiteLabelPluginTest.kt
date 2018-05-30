@@ -93,9 +93,9 @@ class WhiteLabelPluginTest {
     @Test
     fun `whitelabel config file adjusts options`() {
         val extension = configuredProject().extensions.findByType(AppExtension::class.java)!!
-        //Should have two dimensions, and "whiteLabel" should be second
+        //Should have two dimensions, and "whiteLabelconfiguredLabel" should be second
         assert(extension.flavorDimensionList.size == 2)
-        assert(extension.flavorDimensionList[1].toLowerCase() == "whitelabel", { "Has Dimensions: ${extension.flavorDimensionList}" })
+        assert(extension.flavorDimensionList[1].toLowerCase() == "whitelabelconfiguredlabel", { "Has Dimensions: ${extension.flavorDimensionList}" })
 
         //The folder is named differently, and can only be found if the config file is properly read
         testSourceSet(extension.sourceSets.findByName("example_1")!!, 1)
@@ -107,6 +107,36 @@ class WhiteLabelPluginTest {
 
         val example2Flavor = extension.productFlavors.findByName("example_2")!!
         assert(example2Flavor.applicationIdSuffix.isNullOrEmpty(), {"Example 2 Suffix: ${example2Flavor.applicationIdSuffix}" })
+    }
+
+    @Test
+    fun `whitelabel config file allows multiple dimensions`() {
+        val extension = multiDimenProject().extensions.findByType(AppExtension::class.java)!!
+        //Should have three dimensions, and "whiteLabel" should be second
+        assert(extension.flavorDimensionList.size == 3)
+        assert(extension.flavorDimensionList[0].toLowerCase() == "whitelabelsecondarylabel", { "Has Dimensions: ${extension.flavorDimensionList}" })
+        assert(extension.flavorDimensionList[1].toLowerCase() == "testflavor", { "Has Dimensions: ${extension.flavorDimensionList}" })
+        assert(extension.flavorDimensionList[2].toLowerCase() == "whitelabelconfiguredlabel", { "Has Dimensions: ${extension.flavorDimensionList}" })
+
+        //The folder is named differently, and can only be found if the config file is properly read
+        testSourceSet(extension.sourceSets.findByName("example_1")!!, 1)
+        testSourceSet(extension.sourceSets.findByName("example_2")!!, 2)
+        testSourceSet(extension.sourceSets.findByName("secondary_1")!!, 1)
+        testSourceSet(extension.sourceSets.findByName("secondary_2")!!, 2)
+
+        //Configuration test turns off applicationIdSuffix
+        val example1Flavor = extension.productFlavors.findByName("example_1")!!
+        assert(example1Flavor.applicationIdSuffix.isNullOrEmpty(), {"Example 1 Suffix: ${example1Flavor.applicationIdSuffix}" })
+
+        val example2Flavor = extension.productFlavors.findByName("example_2")!!
+        assert(example2Flavor.applicationIdSuffix.isNullOrEmpty(), {"Example 2 Suffix: ${example2Flavor.applicationIdSuffix}" })
+
+        //Secondary config includes applicationIdSuffix
+        val secondary1Flavor = extension.productFlavors.findByName("secondary_1")!!
+        assert(secondary1Flavor.applicationIdSuffix == "secondary_1", {"Secondary 1 Suffix: ${secondary1Flavor.applicationIdSuffix}" })
+
+        val secondary2Flavor = extension.productFlavors.findByName("secondary_2")!!
+        assert(secondary2Flavor.applicationIdSuffix == "differentExtension", {"Secondary 2 Suffix: ${secondary2Flavor.applicationIdSuffix}" })
     }
 
 }

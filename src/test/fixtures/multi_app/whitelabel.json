@@ -1,0 +1,12 @@
+[
+  {
+    "root":"src/test/fixtures/multi_app/configuredLabel",
+    "dimensionPosition":2,
+    "addApplicationSuffix":false
+  },
+  {
+    "root":"src/test/fixtures/multi_app/secondaryLabel",
+    "dimensionPosition":0,
+    "addApplicationSuffix":true
+  }
+]
