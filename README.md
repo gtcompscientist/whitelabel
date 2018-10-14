@@ -24,7 +24,7 @@ buildscript {
   }
   dependencies {
     // ... Other dependencies
-    classpath "gradle.plugin.co.csadev.whitelabel:whitelabel:0.5"
+    classpath "gradle.plugin.co.csadev.whitelabel:whitelabel:0.6"
   }
 }
 ```
@@ -36,7 +36,7 @@ Apply it to the bottom of your app-level build.gradle file as following below.
 If you use the Google Services plugin, apply above that line
 
 ```groovy
-apply plugin:'co.csadev.whitelabel'
+apply plugin: 'co.csadev.whitelabel'
 apply plugin: 'com.google.gms.google-services'
 ```
 
